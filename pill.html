@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      html,
+      body {
+        background: transparent;
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Static fallback: replaced the instant React mounts. If this stays
+           visible, the pill window renders but its JS never ran. -->
+      <div style="display:flex;align-items:center;gap:10px;height:44px;width:fit-content;margin:10px auto;padding:0 18px;border-radius:22px;background:rgba(20,20,24,0.92);border:1px solid rgba(255,255,255,0.12);color:#e5e5e5;font:500 13px -apple-system,sans-serif;white-space:nowrap">
+        <span style="width:10px;height:10px;border-radius:50%;background:#34d399"></span>
+        LocalFlow overlay loading…
+      </div>
+    </div>
+    <script type="module" src="/src/pill.tsx"></script>
+  </body>
+</html>

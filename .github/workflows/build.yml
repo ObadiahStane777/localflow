@@ -1,0 +1,35 @@
+# Plan 1.9: both OSes must at least compile on every push.
+# NOTE: written but not yet exercised — repo has no GitHub remote. The Windows
+# leg is compile-only until someone runs the app on real Windows.
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install frontend deps
+        run: npm ci
+      - name: Frontend typecheck + build
+        run: npm run build
+      - name: Rust check + tests
+        working-directory: src-tauri
+        run: |
+          cargo check --all-targets
+          cargo test --lib

@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Main window capabilities",
+  "windows": ["main", "pill"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "macos-permissions:default",
+    "autostart:default"
+  ]
+}
