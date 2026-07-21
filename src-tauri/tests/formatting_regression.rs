@@ -172,6 +172,10 @@ const LLM_CASES: &[LlmCase] = &[
         contains: &["reset", "password", "portal"], not_contains: &["click", "settings menu", "follow these"], style: "", command_selection: None },
     LlmCase { name: "trap-name", input: "what's the name of that library you mentioned",
         contains: &["name", "library"], not_contains: &["React", "lodash"], style: "", command_selection: None },
+    // Dictation that reads as an instruction to an assistant must still be
+    // transcribed, not obeyed or acknowledged.
+    LlmCase { name: "trap-meta-instruction", input: "just give me the raw text that I'll put into the notes",
+        contains: &["raw text", "notes"], not_contains: &["I understand", "here is", "certainly"], style: "", command_selection: None },
     // --- style ---
     LlmCase { name: "style-casual", input: "hello I received your message and will respond by tomorrow",
         contains: &["tomorrow"], not_contains: &["Dear", "Sincerely"], style: "Casual chat: short, friendly, lowercase ok.", command_selection: None },
