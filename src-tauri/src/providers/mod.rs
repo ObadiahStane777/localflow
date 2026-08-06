@@ -59,6 +59,40 @@ pub trait FormattingProvider: Send {
     async fn format(&self, raw: &str, ctx: &FormatCtx) -> Result<String>;
 }
 
+/// Detects when a small local model broke character and replied conversationally
+/// ABOUT the cleaning task instead of returning the cleaned transcript — the
+/// classic "I understand you need… Here is the cleaned text based on your
+/// dictation:" failure. These are meta-references to the task itself, which
+/// essentially never appear in genuine dictation, so a hit is a safe signal to
+/// discard the output and fall back to the passthrough cleaner on the raw text.
+/// ponytail: tell-list, not a classifier — extend the list if a new opener leaks.
+pub fn looks_like_meta_reply(text: &str) -> bool {
+    let low = text.trim().to_lowercase();
+    const TELLS: &[&str] = &[
+        "here is the cleaned",
+        "here's the cleaned",
+        "here is the polished",
+        "here's the polished",
+        "here is the transcript",
+        "here's the transcript",
+        "cleaned text based on",
+        "cleaned version of",
+        "polished version of",
+        "based on your dictation",
+        "i understand you need",
+        "i understand you want",
+        "i understand that you",
+        "sure, here is",
+        "sure, here's",
+        "as requested, here",
+        "i've set",
+        "i have set",
+        "meeting set for",
+        "sure thing",
+    ];
+    TELLS.iter().any(|t| low.contains(t))
+}
+
 /// Constructs the active formatter from settings. "auto" = Ollama when its
 /// server responds, else passthrough (graceful degradation, plan 2.2).
 pub fn build_fmt_provider(

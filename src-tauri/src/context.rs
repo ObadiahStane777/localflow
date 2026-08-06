@@ -118,7 +118,15 @@ fn read_ax_selection() -> Result<Option<String>> {
 }
 
 /// Imperative-vs-dictation heuristic (plan 2.8): with a selection present, an
-/// utterance opening with a rewrite verb is a command.
+/// utterance opening with a rewrite verb AND referring back to the selection
+/// (a deictic like "this"/"that") is a command. The verb-only check used to
+/// fire on ordinary sentences that happen to open with one of these common
+/// words ("fix the time to 2", "make it 2 instead") — with any leftover text
+/// selected elsewhere on screen, that silently rewrote the selection instead
+/// of transcribing. Requiring a deictic keeps the verb list broad (real
+/// commands almost always say "this"/"that") while making plain dictation
+/// safe. "it" is deliberately excluded — too common as a generic pronoun
+/// ("make it 2 instead") to reliably mean "the selection".
 pub fn looks_like_command(utterance: &str) -> bool {
     const VERBS: &[&str] = &[
         "make", "rewrite", "reword", "rephrase", "paraphrase", "summarize", "summarise",
@@ -126,14 +134,19 @@ pub fn looks_like_command(utterance: &str) -> bool {
         "translate", "convert", "turn", "format", "simplify", "formalize", "formalise",
         "capitalize", "capitalise", "lowercase", "uppercase", "bulletize", "bullet",
     ];
-    let first = utterance
-        .trim()
-        .split_whitespace()
+    const DEICTICS: &[&str] = &[
+        "this", "that", "these", "those", "selection", "selected",
+    ];
+    let lower = utterance.trim().to_lowercase();
+    let mut words = lower.split_whitespace();
+    let first = words
         .next()
         .unwrap_or("")
-        .to_lowercase();
-    let first = first.trim_matches(|c: char| !c.is_alphanumeric());
-    VERBS.contains(&first)
+        .trim_matches(|c: char| !c.is_alphanumeric());
+    if !VERBS.contains(&first) {
+        return false;
+    }
+    words.any(|w| DEICTICS.contains(&w.trim_matches(|c: char| !c.is_alphanumeric())))
 }
 
 #[cfg(test)]
@@ -142,11 +155,18 @@ mod tests {
 
     #[test]
     fn command_heuristic() {
+        // Verb + deictic → command.
         assert!(looks_like_command("make this more formal"));
-        assert!(looks_like_command("Summarize the key points."));
-        assert!(looks_like_command("rewrite as a bulleted list"));
+        assert!(looks_like_command("Summarize the key points, then bullet those."));
+        assert!(looks_like_command("rewrite that as a bulleted list"));
+        assert!(looks_like_command("fix this typo"));
+        assert!(looks_like_command("format the selected text"));
+        // Verb but no deictic → dictation, not a command.
         assert!(!looks_like_command("the meeting is at three"));
         assert!(!looks_like_command("I need to make dinner later"));
-        // "I need to make..." starts with "i", not a verb — correct.
+        assert!(!looks_like_command("fix the time to 2"));
+        assert!(!looks_like_command("make it 2 instead"));
+        assert!(!looks_like_command("turn left at the light"));
+        assert!(!looks_like_command("convert the garage into an office"));
     }
 }

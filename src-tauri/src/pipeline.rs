@@ -364,6 +364,21 @@ fn process_utterance(
         let f = fmt.expect("checked above");
         let t_fmt = Instant::now();
         match tauri::async_runtime::block_on(f.format(&raw, &fmt_ctx)) {
+            // Guard: a small local model sometimes breaks character and replies
+            // conversationally about the task instead of transcribing. Detect
+            // that (Dictate only — see looks_like_meta_reply) and fall back to
+            // passthrough so the raw dictation is never lost.
+            Ok(text)
+                if matches!(mode, Mode::Dictate)
+                    && providers::looks_like_meta_reply(&text) =>
+            {
+                tracing::warn!("formatter broke character (meta-reply), using passthrough: {text:?}");
+                (
+                    providers::passthrough::clean(&raw, &fmt_ctx),
+                    "passthrough".to_string(),
+                    Some("formatter broke character — used passthrough".into()),
+                )
+            }
             Ok(text) if !text.trim().is_empty() => {
                 tracing::debug!("fmt ({}): {} ms", f.id(), t_fmt.elapsed().as_millis());
                 (text.trim().to_string(), f.id().to_string(), None)

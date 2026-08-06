@@ -98,6 +98,37 @@ fn passthrough_cases() {
     );
 }
 
+// ---------- break-character guard (no server needed) ----------
+
+#[test]
+fn meta_reply_guard() {
+    use localflow::providers::looks_like_meta_reply;
+
+    // Break-character replies that MUST be caught.
+    let bad = [
+        "I understand you need just the cleaned text without any additional \
+         instructions or context. Here is the cleaned text based on your dictation:",
+        "Sure, here is the cleaned version of your dictation.",
+        "Here's the polished text:",
+        "As requested, here is the transcript.",
+    ];
+    for b in bad {
+        assert!(looks_like_meta_reply(b), "should flag meta-reply: {b:?}");
+    }
+
+    // Genuine dictation that must NOT be flagged (no false positives).
+    let good = [
+        "Send an email to Sarah about the Q3 numbers.",
+        "Here is the plan for tomorrow: ship the fix, then email the client.",
+        "I understand the concern and I'll follow up.",
+        "The cleaned data is in the second spreadsheet.",
+        "Just give me the raw text that I'll put into the notes.",
+    ];
+    for g in good {
+        assert!(!looks_like_meta_reply(g), "false positive on dictation: {g:?}");
+    }
+}
+
 // ---------- Tier 2: LLM (property assertions vs live Ollama) ----------
 
 struct LlmCase {
